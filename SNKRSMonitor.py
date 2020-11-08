@@ -130,5 +130,5 @@ class SNKRSMonitor:
 
 if __name__ == '__main__':
     urllib3.disable_warnings()
-    test = SNKRSMonitor(webhook=CONFIG['https://discord.com/api/webhooks/766713016888459375/CwDG7MiCjSDKCYas38LoLwSs2tNx68Bt3w4RL6ORbeEMoLL7ZZ4JdthESF66Suo6_X1Q'])
+    test = SNKRSMonitor(webhook=CONFIG[https://discord.com/api/webhooks/766713016888459375/CwDG7MiCjSDKCYas38LoLwSs2tNx68Bt3w4RL6ORbeEMoLL7ZZ4JdthESF66Suo6_X1Q])
     test.monitor()
