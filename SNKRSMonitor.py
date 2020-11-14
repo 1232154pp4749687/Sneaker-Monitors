@@ -74,7 +74,7 @@ class SNKRSMonitor:
         embed = {}
         embed["title"] = title
         embed["description"] = '*Item restock*\n Colour: ' + str(colour)
-        embed["url"] = 'https://www.nike.com/gb/launch/t/' + slug
+        embed["url"] = 'https://www.nike.com/es/launch/t/' + slug
         embed["thumbnail"] = {'url': thumbnail}
         embed["color"] = int(CONFIG['COLOUR'])
         embed["footer"] = {'text': 'Made by Yasser'}
