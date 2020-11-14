@@ -1,121 +1,64 @@
-# Sneaker Monitors
-A collection of web monitors that notify of restocks or updates on sneaker related sites through Discord Webhook.
+# SNKRS Monitor
 
-If you have any requests for sites, please let me know via Discord at @TheBrownPanther2#3801
+This will outline how to use the SNKRS Monitor
 
-##### NOTE: Info on the Footsites monitor will be updated soon
+If set up properly, the monitor can work in a variety of countries.
+Below is a list of the countries that the monitor supports.
 
-## Installation
-The following modules are required:
+To set up the monitor, please put the 2 letter country code into the ```LOCATION``` variable and one of the corresponding language codes in the ```LANGUAGE``` variable found in the ```.env``` file.
+See the table below for the country codes and language codes.
+
+For example, if I want a monitor for Belgium in French, I can put the following into the ```.env``` file.
 ```
-requests
-json
-time
-datetime
-urllib3
-logging
-```
-For the Footsites monitor, you also need:
-```
-bs4
+LOCATION = "BE"
+LANGUAGE = "fr"
 ```
 
-## Introduction
+If your country is not found below, it is because Nike use a different set-up.
+As a result, we cannot cater to your country.
 
-This repo contains different monitors to various sites to notify if a restock or update occurs via Discord Webhook. A list of all the sites are detailed below:
-- All shopify sites (e.g. Palace Skateboards, Hanon Shop, OVO, shopnicekicks.com, BDGA Store, Noir Fonce, Travis Scott, etc.)
-- Supreme
-- Nike SNKRS
-- Footsites (currently only Footlocker)
-
-## How to Use
-
-These scripts should be running continuously for the monitor to work.
-As such you will need to host it on a server.
-Personally, I use AWS, but nevertheless, there are tonnes out there. 
-
-Each monitor has an associated ```.env``` file. 
-This is where you put your webhook URL.
-There are also options to change the bot username, avatar and colour.
-
-The Shopify monitors have specific requirements, please refer to the associated ```README.md``` file.
-
-
-## Example Set-Up with AWS 
-
-This is a very good tutorial that will go through everything written here and more:
-https://youtu.be/BYvKv3kM9pk
-
-https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstances.html
-
-This requires you to have an account with AWS. 
-Navigate to the `Console`, and click on the `Services` menu.
-Under the `Compute` heading, select `EC2`.
-From here, we will create our instance. 
-
-Select the `Launch Instance` button. 
-You will be taken to a page with a list of instances to choose from.
-We will be focusing on the 'free Tier'. 
-Lets choose the `Ubuntu Server 18.04 LTS (HVM), SSD Volume Type`. 
-The next page will ask you to choose an instance type - it should already have the Free Tier option selected which is what we will use.
-The next page will ask you to Review - click `Launch`. 
-
-We then need to create a Key Pair for our instance. 
-So for the first dropdown menu select `Create a new key pair`. 
-Then name it anything you want. 
-Then you should download this key pair and store it somewhere safe and accessible.
-This will be used to access your virtual machine.
-
-Now depending on your OS, there are different ways of accessing this instance.
-Below are a few ways
-
-**Windows:**
-
-There are a few options:
-- Use PuTTY
-- SSH Client
-
-**Mac/Linux:**
-
-The options include:
-- SSH Client
-- EC2 Instance Connect
-
-I use PuTTY. 
-We also need a file transfer system, to upload your code to the instance.
-I use FileZilla.
-
-Upload your files to your instance using FileZilla. 
-Then using PuTTY, type the following command to install Python:
-
-```
-$ sudo apt install python3-pip
-```
-
-Then using pip, install the packages needed:
-```
-$ pip3 install [package name]
-```
-
-Once everything is done, we can run our code. 
-Firstly, we want it to run continuously. 
-As such, we type in the command, where we can have multiple sessions on a single screen instance:
-
-```
-$ screen
-``` 
-
-Then run the code:
-
-```
-$ python3 [name of script].py
-```
-
-To disconnect from the screen, but leave it running, press ``CTRL A + D``.
-Now you can close the window, and the code should be running!
-
-
-## Need to Do
-
-- The ShopifyMonitor_Specific.py is a work in progress. This will be a more accessible Shopify monitor which will work on more shopify sites.
-- SupremeMonitor_Specific.py needs to be fully tested
+Country | 2 Letter Country Code | Language Code
+--------|-----------------------|--------------
+United Kingdom | GB | en-GB
+United States | US | en
+Australia | AU | en-GB
+Austria | AT | en-GB / de
+Belgium | BE | en-GB / nl / de / fr
+Bulgaria | BG | en-GB
+Canada | CA | en-GB / fr
+Chile | CL | es-419
+China | CN | zh-Hans
+Croatia | HR | en-GB
+Czechia | CZ | en-GB / cs
+Denmark | DK | en-GB / da
+Egypt | EG | en-GB
+Finland | FI | en-GB
+France | FR | fr
+Germany | DE | de
+Hungary | HU | en-GB
+India | IN | en-GB
+Indonesia | ID | en-GB
+Ireland | IE | en-GB
+Italy | IT | it
+Malaysia | MY | en-GB
+Mexico | MX | es-419
+Morocco | MA | en-GB / fr
+Netherlands | NL | en-GB / nl 
+New Zealand | NZ | en-GB
+Norway | NO | en-GB / no
+Philippines | PH | en-GB 
+Poland | PL | pl
+Portugal | PT | en-GB / es-419
+Puerto Rico | PR | es-419
+Romania | RO | en-GB / 
+Russia | RU | ru
+Saudi Arabia | SA | en-GB
+Singapore | SG | en-GB
+Slovenia | SI | en-GB   
+South Africa | ZA | en-GB
+Spain | ES | es-ES / ca
+Sweden | SE | en-GB / sv
+Switzerland | CH | en-GB / fr / de / it 
+Turkey | TR | tr
+UAE | AE | en-GB
+Vietnam | VN | en-GB
