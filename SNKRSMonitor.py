@@ -6,78 +6,94 @@ import urllib3
 import logging
 import dotenv
 
-logging.basicConfig(filename='SNKRSlog.log', filemode='a', format='%(asctime)s - %(name)s - %(message)s', level=logging.DEBUG)
+
+logging.basicConfig(filename='suplog.log', filemode='a', format='%(asctime)s - %(name)s - %(message)s', level=logging.DEBUG)
 CONFIG = dotenv.dotenv_values()
 
 
-class SNKRSMonitor:
-    def __init__(self, webhook, loc, lan, proxy):
-        self.url = ['https://api.nike.com/product_feed/threads/v2/?anchor=', f'&count=&filter=marketplace%28{loc}%29&filter=language%28{lan}%29&filter=channelId%28010794e5-35fe-4e32-aaff-cd2c74f89d61%29&filter=exclusiveAccess%28true%2Cfalse%29&fields=active%2Cid%2ClastFetchTime%2CproductInfo%2CpublishedContent.nodes%2CpublishedContent.subType%2CpublishedContent.properties.coverCard%2CpublishedContent.properties.productCard%2CpublishedContent.properties.products%2CpublishedContent.properties.publish.collections%2CpublishedContent.properties.relatedThreads%2CpublishedContent.properties.seo%2CpublishedContent.properties.threadType%2CpublishedContent.properties.custom%2CpublishedContent.properties.title']
+class SupremeMonitor:
+    def __init__(self, webhook, proxy):
         self.headers = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 '
                                       '(KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'}
-        self.items = []
-        self.number_of_items = 50
         self.instock = []
-        self.instock_copy = []
         self.webhook = webhook
         if proxy is None:
             self.proxy = {}
         else:
             self.proxy = {"http": f"http://{proxy}"}
 
-    def scrape_site(self):
+    def get_stock(self):
         """
-        Scrapes SNKRS site and adds items to array
-        :return: None
+        Makes a request to Supreme's mobile_stock endpoint.
+        Return its content.
         """
-        no_of_pages = self.number_of_items//50
-        anchor = 0
-        while no_of_pages != 0:
-            try:
-                html = rq.get(url=self.url[0] + str(anchor) + self.url[1], timeout=5, verify=False, headers=self.headers, proxies=self.proxy)
-                output = json.loads(html.text)
-                for item in output['objects']:
-                    self.items.append(item)
-                    logging.info(msg='Successfully scraped SNKRS site')
-            except Exception as e:
-                print('Error - ', e)
-                logging.error(msg=e)
-            anchor += 50
-            no_of_pages -= 1
 
-    def checker(self, product, colour):
-        """
-        Determines whether the product status has changed
-        :param product: Shoe name
-        :param colour: Shoe colour
-        :return: None
-        """
-        for item in self.instock_copy:
-            if item == [product, colour]:
-                self.instock_copy.remove([product, colour])
-                return True
-        return
+        url = "https://www.supremenewyork.com/mobile_stock.json"
+        stock = rq.get(url, headers=self.headers, proxies=self.proxy).json()['products_and_categories']
 
-    def discord_webhook(self, title, colour, slug, thumbnail):
+        return stock
+
+    def get_item_variants(self, item_id, item_name, start):
+        """
+        Scrapes each item on the webstore and checks whether the product is in-stock or not. If in-stock
+        it will send a Discord notification
+        """
+
+        item_url = f"https://www.supremenewyork.com/shop/{item_id}.json"
+
+        item_variants = rq.get(item_url, headers=self.headers, proxies=self.proxy).json()
+
+        for stylename in item_variants["styles"]:
+            for itemsize in stylename["sizes"]:
+                item = [item_name, stylename["name"], itemsize['name'], item_variants["description"], 'https:' + stylename["image_url"], item_url.split('.json')[0]]
+                if itemsize["stock_level"] != 0:
+                    # Checks if it already exists in our instock
+                    if self.checker(item):
+                        pass
+                    else:
+                        # Add to instock dict
+                        self.instock.append(item)
+                        
+                        # Send a notification to the discord webhook with the in-stock product
+                        if start == 0:
+                            print('Sending new Notification')
+                            self.discord_webhook(item)
+                            logging.info(msg='Successfully sent Discord notification')
+
+                else:
+                    if self.checker(item):
+                        self.instock.remove(item)
+
+    def discord_webhook(self, product_item):
         """
         Sends a Discord webhook notification to the specified webhook URL
-        :param title: Shoe name
-        :param colour: Shoe Colour
-        :param slug: Shoe URL
-        :param thumbnail: URL to shoe image
+        :param product_item: A list of the product's details
         :return: None
         """
+
         data = {}
         data["username"] = CONFIG['USERNAME']
         data["avatar_url"] = CONFIG['AVATAR_URL']
         data["embeds"] = []
+
         embed = {}
-        embed["title"] = title
-        embed["description"] = '*Item restock*\n Colour: ' + str(colour)
-        embed["url"] = 'https://www.nike.com/es/launch/t/' + slug
-        embed["thumbnail"] = {'url': thumbnail}
-        embed["color"] = int(CONFIG['COLOUR'])
-        embed["footer"] = {'text': 'Made by Yasser'}
+        
+        # Item Name and Style Name
+        embed["title"] = product_item[0] + ' - ' + product_item[1] + ' - ' + product_item[2]
+
+        # Product Description
+        if product_item[3]:
+            embed["description"] = product_item[3]
+
+        # Product Link
+        embed['url'] = product_item[5]
+
+        embed["color"] = CONFIG['COLOUR']
+
+        # Product Image
+        embed["thumbnail"] = {'url': product_item[4]}
+
+        embed["footer"] = {'text': 'Made by Yasser & Bogdan'}
         embed["timestamp"] = str(datetime.datetime.now())
         data["embeds"].append(embed)
 
@@ -86,10 +102,21 @@ class SNKRSMonitor:
         try:
             result.raise_for_status()
         except rq.exceptions.HTTPError as err:
+            print(err)
             logging.error(msg=err)
         else:
             print("Payload delivered successfully, code {}.".format(result.status_code))
             logging.info(msg="Payload delivered successfully, code {}.".format(result.status_code))
+
+    def checker(self, product):
+        """
+        Determines whether the product status has changed
+        :return: Boolean whether the status has changed or not
+        """
+        for item in self.instock:
+            if item == product:
+                return True
+        return False
 
     def monitor(self):
         """
@@ -100,32 +127,17 @@ class SNKRSMonitor:
         logging.info(msg='Successfully started monitor')
         start = 1
         while True:
-            self.scrape_site()
-            self.instock_copy = self.instock.copy()
-            for item in self.items:
-                try:
-                    for j in item['productInfo']:
-                        if j['availability']['available'] == True and j['merchProduct']['status'] == 'ACTIVE':
-                            if self.checker(j['merchProduct']['labelName'], j['productContent']['colorDescription']):
-                                pass
-                            else:
-                                self.instock.append([j['merchProduct']['labelName'], j['productContent']['colorDescription']])
-                                if start == 0:
-                                    self.discord_webhook(j['merchProduct']['labelName'], j['productContent']['colorDescription'], j['productContent']['slug'], j['imageUrls']['productImageUrl'])
-                                    logging.info(msg='Sending new notification')
-                                    time.sleep(1)
-
-                        else:
-                            if self.checker(j['merchProduct']['labelName'], j['productContent']['colorDescription']):
-                                self.instock.remove([j['merchProduct']['labelName'], j['productContent']['colorDescription']])
-                except:
-                    pass
-                self.items.remove(item)
-            start = 0
+            stock = self.get_stock()
             time.sleep(1)
+            for cat in stock:
+                for product_item in stock[cat]:
+                    self.get_item_variants(product_item['id'], product_item['name'], start)
+                    time.sleep(1)
+            start = 0
+            logging.info(msg='Successfully monitored site')
 
 
 if __name__ == '__main__':
     urllib3.disable_warnings()
-    test = SNKRSMonitor(webhook=CONFIG['WEBHOOK'], loc=CONFIG['LOCATION'], lan=CONFIG['LANGUAGE'], proxy=CONFIG['PROXY'])
-    test.monitor()
+    supremeMonitor = SupremeMonitor(webhook=CONFIG['WEBHOOK'], proxy=CONFIG['PROXY'])
+    supremeMonitor.monitor()
