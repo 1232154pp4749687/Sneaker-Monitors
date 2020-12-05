@@ -132,12 +132,11 @@ class SupremeMonitor:
             for cat in stock:
                 for product_item in stock[cat]:
                     self.get_item_variants(product_item['id'], product_item['name'], start)
-                    time.sleep(1)
+                    time.sleep(0.3)
             start = 0
             logging.info(msg='Successfully monitored site')
 
 
 if __name__ == '__main__':
     urllib3.disable_warnings()
-    supremeMonitor = SupremeMonitor(webhook=CONFIG['WEBHOOK'], proxy=CONFIG['PROXY'])
-    supremeMonitor.monitor()
+    SupremeMonitor(webhook=CONFIG['WEBHOOK'], proxy=CONFIG['PROXY']).monitor()
